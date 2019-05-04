@@ -91,3 +91,15 @@ OR prod_codigo IN (SELECT TOP 10 p2.prod_codigo FROM Producto p2
 				  ON i2.item_producto = p2.prod_codigo
 				  GROUP BY p2.prod_codigo
 			      ORDER BY SUM(i2.item_cantidad) ASC);
+
+-- Ejercicio 15
+
+SELECT p1.prod_codigo, p1.prod_detalle, p2.prod_codigo, p2.prod_detalle, COUNT(itf1.item_numero)
+FROM Producto p1 JOIN Item_Factura itf1 ON p1.prod_codigo = itf1.item_producto,
+Producto p2 JOIN Item_Factura itf2 ON p2.prod_codigo = itf2.item_producto
+WHERE itf1.item_numero = itf2.item_numero
+AND itf1.item_tipo = itf2.item_tipo
+AND itf1.item_sucursal = itf2.item_sucursal
+AND p1.prod_codigo > p2.prod_codigo
+GROUP BY p1.prod_codigo, p1.prod_detalle, p2.prod_codigo, p2.prod_detalle
+HAVING COUNT(itf1.item_numero)>500;
