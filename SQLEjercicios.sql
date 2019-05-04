@@ -42,4 +42,52 @@ WHERE s2.stoc_producto = '00000000'
 AND s2.stoc_deposito = '00')
 GROUP BY rubr_id, rubr_detalle;
 
+--Ejercicio 7
 
+SELECT prod_detalle, prod_codigo, MAX(prod_precio) AS cant_max, MIN(prod_precio) AS cant_max, 
+CASE 
+	WHEN MIN(prod_precio) = 0 THEN 0
+	ELSE (MAX(prod_precio)/MIN(prod_precio)-1)*100
+END diferencia_porcentual
+FROM dbo.Producto 
+JOIN dbo.STOCK ON prod_codigo = stoc_producto
+GROUP BY prod_detalle, prod_codigo
+HAVING SUM(ISNULL(stoc_cantidad,0)) > 0;
+
+--Ejercicio 8
+
+SELECT prod_detalle, MAX(stoc_cantidad)
+FROM dbo.Producto
+JOIN dbo.STOCK ON prod_codigo = stoc_producto
+WHERE ISNULL(stoc_cantidad,0) > 0
+GROUP BY prod_detalle, prod_codigo
+HAVING COUNT(*) = (SELECT COUNT(*) FROM dbo.DEPOSITO);
+
+-- Ejercicio 9
+
+SELECT empl1.empl_jefe AS codigo_jefe, empl1.empl_codigo AS codigo_empleado, empl2.empl_nombre, COUNT(depo_codigo) AS depositos_a_cargo_empl,
+(SELECT COUNT(depo_encargado)
+ FROM dbo.DEPOSITO
+ WHERE depo_encargado = empl1.empl_jefe)AS depositos_a_cargo_jefe
+FROM dbo.Empleado empl1
+LEFT JOIN dbo.Empleado empl2 ON empl1.empl_jefe = empl2.empl_codigo
+LEFT JOIN dbo.DEPOSITO ON depo_encargado = empl1.empl_codigo
+GROUP BY empl1.empl_jefe, empl1.empl_codigo, empl2.empl_nombre;
+
+-- Ejercicio 10
+
+SELECT *, (SELECT TOP 1 fact_cliente FROM Factura, Item_Factura WHERE fact_numero = item_numero AND
+		   fact_tipo = item_tipo AND fact_sucursal = item_sucursal AND item_producto = prod_codigo
+		   GROUP BY fact_cliente
+		   ORDER BY SUM(item_cantidad*item_precio) DESC)
+FROM Producto
+WHERE prod_codigo IN (SELECT TOP 10 p1.prod_codigo FROM Producto p1
+				      LEFT JOIN item_factura i1
+					  ON i1.item_producto = p1.prod_codigo
+					  GROUP BY p1.prod_codigo
+					  ORDER BY SUM(i1.item_cantidad) DESC)
+OR prod_codigo IN (SELECT TOP 10 p2.prod_codigo FROM Producto p2
+				  LEFT JOIN item_factura i2
+				  ON i2.item_producto = p2.prod_codigo
+				  GROUP BY p2.prod_codigo
+			      ORDER BY SUM(i2.item_cantidad) ASC);
