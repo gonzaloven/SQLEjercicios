@@ -91,6 +91,24 @@ OR prod_codigo IN (SELECT TOP 10 p2.prod_codigo FROM Producto p2
 				  ON i2.item_producto = p2.prod_codigo
 				  GROUP BY p2.prod_codigo
 			      ORDER BY SUM(i2.item_cantidad) ASC);
+		  
+--EJERCICIO 11
+SELECT fami_detalle, COUNT(DISTINCT(prod_codigo)) AS productos_dif, SUM(item_cantidad * item_precio) AS monto_total
+FROM Familia, Producto, Item_Factura
+WHERE fami_id = prod_familia
+AND prod_codigo = item_producto
+GROUP BY fami_detalle, fami_id
+HAVING 
+		(SELECT SUM(item_cantidad * item_precio) as monto_total_2012
+		FROM Producto, Item_Factura, Factura
+		WHERE fact_numero = item_numero
+		AND fact_sucursal = item_sucursal
+		AND fact_tipo = item_tipo
+		AND item_producto = prod_codigo
+		AND prod_familia = fami_id
+		AND YEAR(fact_fecha) = 2012)>20000
+
+ORDER BY productos_dif DESC;
 
 -- Ejercicio 15
 
