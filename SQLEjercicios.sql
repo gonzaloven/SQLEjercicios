@@ -133,6 +133,19 @@ HAVING
 			   AND i.item_numero = fact_numero
 			   AND YEAR(f.fact_fecha) = 2012)
 ORDER BY SUM(item_cantidad * item_precio) DESC;
+		       
+--EJERCICIO 13
+
+SELECT p1.prod_detalle AS nombre, 
+	   p1.prod_precio AS precio, 
+	   SUM(p2.prod_precio*comp_cantidad) AS precio_componentes
+
+FROM Producto p1, Composicion, Producto p2
+WHERE p1.prod_codigo=comp_producto
+AND p2.prod_codigo=comp_componente
+GROUP BY p1.prod_codigo,p1.prod_detalle, p1.prod_precio
+HAVING COUNT(*)>=2
+ORDER BY COUNT(*) DESC
 
 -- Ejercicio 15
 
