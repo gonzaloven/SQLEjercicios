@@ -110,6 +110,30 @@ HAVING
 
 ORDER BY productos_dif DESC;
 
+--EJERCICIO 12
+
+SELECT prod_detalle, 
+	   COUNT(DISTINCT(clie_codigo)) AS clientes_compradores, 
+	   AVG(item_cantidad * item_precio) AS promedio_pagado, 
+	   (SELECT COUNT(stoc_deposito) FROM STOCK WHERE stoc_producto = prod_codigo AND ISNULL(stoc_cantidad,0)>0) AS depositos, 
+	   (SELECT SUM(ISNULL(stoc_cantidad,0)) FROM STOCK WHERE stoc_producto = prod_codigo) AS stock_tot
+FROM Producto, Cliente, Item_Factura, Factura
+WHERE prod_codigo = item_producto
+AND item_tipo = fact_tipo
+AND item_sucursal = fact_sucursal
+AND item_numero = fact_numero
+AND fact_cliente = clie_codigo
+GROUP BY prod_detalle, prod_codigo
+HAVING 
+		EXISTS(SELECT prod_codigo, f.fact_sucursal, f.fact_numero, f.fact_tipo
+			   FROM Factura f, Producto, Item_Factura i
+			   WHERE prod_codigo = i.item_producto
+			   AND i.item_tipo = fact_tipo
+			   AND i.item_sucursal = fact_sucursal
+			   AND i.item_numero = fact_numero
+			   AND YEAR(f.fact_fecha) = 2012)
+ORDER BY SUM(item_cantidad * item_precio) DESC;
+
 -- Ejercicio 15
 
 SELECT p1.prod_codigo, p1.prod_detalle, p2.prod_codigo, p2.prod_detalle, COUNT(itf1.item_numero)
