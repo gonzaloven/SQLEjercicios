@@ -146,6 +146,25 @@ AND p2.prod_codigo=comp_componente
 GROUP BY p1.prod_codigo,p1.prod_detalle, p1.prod_precio
 HAVING COUNT(*)>=2
 ORDER BY COUNT(*) DESC
+		       
+--EJERCICIO 14
+
+SELECT clie_codigo, 
+	   ISNULL(COUNT(DISTINCT(fact_numero)),0) AS cant_compras,
+	   (SELECT ISNULL(AVG(fact_total),0) FROM Factura
+	   WHERE YEAR(fact_fecha)=(SELECT MAX(YEAR(fact_fecha)) FROM Factura) 
+	   AND fact_cliente=clie_codigo) AS promedio_compra,
+	   ISNULL(COUNT(DISTINCT(item_producto)),0) AS cant_prod_dist,
+	   ISNULL(MAX(fact_total),0) AS mayor_compra
+
+FROM Cliente LEFT JOIN 
+(Factura JOIN Item_Factura ON fact_numero = item_numero 
+AND fact_sucursal = item_sucursal 
+AND fact_tipo = item_tipo) ON clie_codigo = fact_cliente
+
+WHERE YEAR(fact_fecha) = (SELECT MAX(YEAR(fact_fecha)) FROM Factura)
+GROUP BY clie_codigo
+ORDER BY cant_compras DESC
 
 -- Ejercicio 15
 
