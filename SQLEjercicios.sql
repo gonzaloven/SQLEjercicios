@@ -177,3 +177,43 @@ AND itf1.item_sucursal = itf2.item_sucursal
 AND p1.prod_codigo > p2.prod_codigo
 GROUP BY p1.prod_codigo, p1.prod_detalle, p2.prod_codigo, p2.prod_detalle
 HAVING COUNT(itf1.item_numero)>500;
+
+--Ejercicio 16
+				     
+SELECT clie_codigo, 
+       clie_razon_social, 
+	   (SELECT SUM(CASE WHEN comp_producto IS NULL THEN item_cantidad ELSE item_cantidad*comp_cantidad END)
+	    FROM Factura JOIN Item_Factura 
+	    ON fact_sucursal=item_sucursal 
+	    AND fact_numero=item_numero 
+	    AND fact_tipo=item_tipo
+	    LEFT JOIN Composicion ON item_producto=comp_producto
+	    WHERE fact_cliente=clie_codigo 
+	    AND YEAR(fact_fecha)=2012) AS cantidad_vendida_total,
+
+	   (SELECT TOP 1 item_producto FROM Item_Factura i2 JOIN Factura ON fact_sucursal=item_sucursal 
+	    AND fact_numero=item_numero 
+	    AND fact_tipo=item_tipo
+	    LEFT JOIN Composicion co ON item_producto=comp_componente
+	    WHERE YEAR (fact_fecha)=2012 AND fact_cliente=clie_codigo
+	    GROUP BY item_producto, comp_componente,comp_producto,comp_cantidad
+	    ORDER BY SUM(i2.item_cantidad) + (CASE WHEN comp_componente is not null THEN 
+						 (SELECT SUM(item_cantidad)*co.comp_cantidad 
+						  FROM Factura f2 JOIN Item_Factura ON fact_sucursal=item_sucursal 
+						  AND fact_numero=item_numero 
+						  AND fact_tipo=item_tipo
+						  WHERE YEAR(fact_fecha)=2012 
+						  AND item_producto=co.comp_producto 
+						  AND f2.fact_cliente=clie_codigo) ELSE 0 END) DESC,item_producto ASC)
+						  AS producto_mayor_venta
+										    
+FROM Cliente c, Factura f
+WHERE c.clie_codigo = f.fact_cliente
+GROUP BY c.clie_codigo, c.clie_domicilio, c.clie_razon_social
+HAVING COUNT(*) < 1.00/3 * (SELECT TOP 1 COUNT(*) FROM Factura JOIN Item_Factura ON fact_sucursal=item_sucursal 
+			    AND fact_numero=item_numero 
+		  	    AND fact_tipo=item_tipo
+			    WHERE YEAR(fact_fecha)=2012
+			    GROUP BY item_producto
+			    ORDER BY COUNT(*) DESC)		     
+ORDER BY c.clie_domicilio ASC
