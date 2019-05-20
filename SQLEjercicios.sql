@@ -217,3 +217,29 @@ HAVING COUNT(*) < 1.00/3 * (SELECT TOP 1 COUNT(*) FROM Factura JOIN Item_Factura
 			    GROUP BY item_producto
 			    ORDER BY COUNT(*) DESC)		     
 ORDER BY c.clie_domicilio ASC
+
+--Ejercicio 17
+
+SELECT 
+	   (CONCAT(YEAR(fact_fecha),RIGHT(CONCAT('0',MONTH(fact_fecha)),2))) AS Periodo,
+	   
+	   prod_codigo AS Prod,
+	   
+	   prod_detalle 'Detalle',
+	   
+	   SUM(item_cantidad) 'Cantidad Vendida',
+	   
+	   (SELECT ISNULL(SUM(item_cantidad),0) FROM Item_Factura i1
+	   JOIN Factura f1 ON item_numero = fact_numero
+	   AND item_sucursal = fact_sucursal
+	   AND item_tipo = fact_tipo
+	   WHERE YEAR(f1.fact_fecha) = YEAR(f.fact_fecha)-1
+	   AND MONTH(f1.fact_fecha) = MONTH(f.fact_fecha)) 'Ventas anio anterior',
+
+	   COUNT(*) 'Cantidad Facturas'
+
+FROM Producto p JOIN (Item_Factura JOIN Factura f ON item_numero = fact_numero
+					 AND item_sucursal = fact_sucursal
+					 AND item_tipo = fact_tipo) ON item_producto = prod_codigo
+GROUP BY prod_codigo, prod_detalle, YEAR(f.fact_fecha), MONTH(f.fact_fecha)
+ORDER BY Periodo,Prod
