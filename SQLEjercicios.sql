@@ -243,3 +243,42 @@ FROM Producto p JOIN (Item_Factura JOIN Factura f ON item_numero = fact_numero
 					 AND item_tipo = fact_tipo) ON item_producto = prod_codigo
 GROUP BY prod_codigo, prod_detalle, YEAR(f.fact_fecha), MONTH(f.fact_fecha)
 ORDER BY Periodo,Prod
+
+--EJERCICIO 18
+					    
+SELECT 
+	   ISNULL(rubr_detalle, 'Sin nombre') AS DETALLE_RUBRO,
+	   
+	   ISNULL(SUM(item_cantidad*item_precio),0) AS VENTAS,
+	   
+	   ISNULL((SELECT TOP 1 prod_codigo FROM Producto p1
+	    JOIN Rubro ON prod_rubro = rubr_id
+		JOIN Item_Factura i1 ON prod_codigo = item_producto
+		GROUP BY prod_codigo
+		ORDER BY SUM(item_cantidad) DESC),'-') AS PROD1,
+	   
+	   ISNULL((SELECT TOP 1 p2.prod_codigo FROM Producto p2
+	    JOIN Rubro ON p2.prod_rubro = rubr_id
+		AND p2.prod_codigo != (SELECT TOP 1 p1.prod_codigo FROM Producto p1
+								JOIN Rubro ON p1.prod_rubro = rubr_id
+								JOIN Item_Factura i1 ON p1.prod_codigo = i1.item_producto
+								GROUP BY p1.prod_codigo
+								ORDER BY SUM(i1.item_cantidad) DESC)
+	    JOIN Item_Factura i2 ON p2.prod_codigo = item_producto
+		GROUP BY p2.prod_codigo
+		ORDER BY SUM(i2.item_cantidad) DESC),'-') AS PROD2,
+
+	   ISNULL((SELECT TOP 1 clie_codigo FROM Cliente
+		JOIN Factura fc ON clie_codigo = fact_cliente
+		JOIN Item_Factura ic ON item_numero = fact_numero AND item_sucursal = fact_sucursal AND item_tipo = fact_tipo
+	    JOIN Producto pc ON prod_codigo = item_producto
+	    JOIN Rubro ON prod_rubro = rubr_id
+		WHERE fc.fact_fecha > DATEADD(day, -30, (SELECT MAX(fact_fecha) FROM Factura))
+		GROUP BY clie_codigo
+		ORDER BY COUNT(ic.item_cantidad) DESC),'-') AS CLIENTE
+
+FROM Rubro JOIN Producto ON rubr_id = prod_rubro
+JOIN Item_Factura ON prod_codigo = item_producto
+JOIN Factura ON fact_numero = item_numero AND item_sucursal = fact_sucursal AND item_tipo = fact_tipo
+GROUP BY rubr_id, rubr_detalle
+ORDER BY COUNT(DISTINCT item_producto) DESC
