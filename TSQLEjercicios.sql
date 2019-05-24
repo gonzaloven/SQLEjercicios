@@ -52,3 +52,32 @@ BEGIN
 
   RETURN @stock_actual + @vendidos_intervalo
 END
+
+--EJERCICIO 3
+
+CREATE PROCEDURE empl_sin_jefe
+AS
+BEGIN
+		DECLARE @jefe_codigo numeric(6,0)
+		DECLARE @emps_sin_jefe TABLE(empl_codigo numeric(6,0))
+		DECLARE @cant_emps_sin_jefe int
+
+		INSERT INTO @emps_sin_jefe
+		SELECT empl_codigo FROM Empleado
+		WHERE empl_jefe IS NULL
+		ORDER BY empl_salario DESC, empl_ingreso ASC
+
+		SET @cant_emps_sin_jefe = (SELECT COUNT(*) FROM @emps_sin_jefe)
+
+		IF(@cant_emps_sin_jefe >= 1)
+			BEGIN 
+				 SELECT TOP 1 @jefe_codigo = empl_codigo
+				 FROM Empleado
+
+				 UPDATE Empleado
+				 SET empl_jefe = @jefe_codigo
+				 WHERE empl_codigo != @jefe_codigo
+			END
+
+		RETURN @cant_emps_sin_jefe
+END
