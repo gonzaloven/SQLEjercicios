@@ -108,3 +108,36 @@ BEGIN
 	SET @mayor_vendedor = (SELECT TOP 1 empl_codigo FROM Empleado
 						   ORDER BY empl_comision DESC)
 END
+
+--EJERCICIO 5
+					     
+CREATE PROCEDURE migrar_datos_fact_table 
+AS
+BEGIN 
+	 INSERT INTO Fact_table
+	 SELECT YEAR(fact_fecha),
+			MONTH(fact_fecha), 
+			prod_familia, 
+			prod_rubro, 
+			ISNULL(depo_zona,'-'), 
+			clie_codigo, 
+			prod_codigo, 
+			SUM(item_cantidad), 
+			SUM(item_precio)
+
+	 FROM Factura, Producto, STOCK, DEPOSITO, Cliente, Item_Factura
+	 WHERE clie_codigo = fact_cliente
+	 AND fact_numero = item_numero
+	 AND fact_sucursal = item_sucursal
+	 AND fact_tipo = item_tipo
+	 AND item_producto = prod_codigo
+	 AND prod_codigo = stoc_producto
+	 AND stoc_deposito = depo_codigo
+	 GROUP BY YEAR(fact_fecha),
+			  MONTH(fact_fecha),
+			  prod_familia,
+			  prod_rubro,
+			  depo_zona,
+			  clie_codigo,
+			  prod_codigo
+END
