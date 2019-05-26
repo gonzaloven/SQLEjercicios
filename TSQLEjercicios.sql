@@ -182,3 +182,24 @@ BEGIN TRANSACTION
 				DEALLOCATE mi_cursor
 
 COMMIT
+
+--EJERCICIO 11
+
+CREATE FUNCTION empleados_a_cargo (@jefe numeric(6,0))
+RETURNS int
+AS 
+
+BEGIN
+	 
+	 DECLARE @empleados_directos int
+	 DECLARE @empleados_indirectos int
+
+	 SELECT @empleados_directos = COUNT(empl_codigo) FROM Empleado
+	 WHERE @jefe = empl_jefe
+
+	 SELECT @empleados_indirectos = dbo.empleados_a_cargo(empl_codigo) FROM Empleado
+	 WHERE @jefe = empl_jefe
+
+	 RETURN ISNULL(@empleados_directos + @empleados_indirectos,0)
+
+END
