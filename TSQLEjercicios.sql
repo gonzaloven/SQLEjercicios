@@ -203,3 +203,62 @@ BEGIN
 	 RETURN ISNULL(@empleados_directos + @empleados_indirectos,0)
 
 END
+
+--EJERCICIO 14
+						 
+CREATE PROCEDURE get_clientes_pago_menos
+AS
+
+BEGIN
+	 DECLARE @Clientes_q_pagaron_menos TABLE
+	 (
+		fecha smalldatetime,
+		cliente char(6),
+		producto char(8),
+		precio decimal(12,2)
+	 )
+	 DECLARE @fecha smalldatetime
+	 DECLARE @cliente char(6)
+	 DECLARE @producto char(8)
+	 DECLARE @precio decimal(12,2)
+
+	 DECLARE mi_cursor CURSOR LOCAL FAST_FORWARD FOR
+	 SELECT fact_fecha, clie_codigo, item_producto, item_precio
+	 FROM Cliente JOIN Factura ON fact_cliente = clie_codigo
+	 JOIN Item_Factura ON item_numero = fact_numero
+	 AND item_sucursal = fact_sucursal
+	 AND item_tipo = fact_tipo
+
+	 OPEN mi_cursor
+	 FETCH NEXT FROM mi_cursor
+	 INTO @fecha, @cliente, @producto, @precio
+
+	 WHILE @@FETCH_STATUS = 0
+	 BEGIN
+		  IF @precio < (SELECT SUM(comp_cantidad * p2.prod_precio) 
+						FROM Composicion JOIN Producto p ON @producto = comp_producto
+						JOIN Producto p2 ON p2.prod_codigo = comp_componente
+						GROUP BY comp_producto)
+			BEGIN
+				 INSERT INTO @Clientes_q_pagaron_menos
+				 VALUES(@fecha, @cliente, @producto, @precio)
+			END
+
+		  IF @precio < (SELECT (SUM(comp_cantidad * p2.prod_precio)/2)
+						FROM Composicion JOIN Producto p ON @producto = comp_producto
+						JOIN Producto p2 ON p2.prod_codigo = comp_componente
+						GROUP BY comp_producto)
+			BEGIN
+				 RAISERROR('El precio del producto es menor que el precio de la suma de sus partes',1,1)
+			END
+		  
+		  FETCH NEXT FROM mi_cursor
+		  INTO @fecha, @cliente, @producto, @precio
+	 END
+
+	 SELECT * FROM @Clientes_q_pagaron_menos
+
+	 CLOSE mi_cursor
+	 DEALLOCATE mi_cursor
+
+END
