@@ -141,3 +141,44 @@ BEGIN
 			  clie_codigo,
 			  prod_codigo
 END
+
+--EJERCICIO 10
+
+CREATE TRIGGER verificar_producto_eliminado ON Producto
+INSTEAD OF DELETE
+AS
+
+BEGIN TRANSACTION
+				 
+				 DECLARE @stock_total decimal(12,2)
+				 DECLARE @prod char(8)
+
+				 SELECT @stock_total = ISNULL(SUM(stoc_cantidad),0) FROM DELETED, STOCK
+				 WHERE prod_codigo = stoc_producto
+
+				 DECLARE mi_cursor CURSOR FOR
+				 SELECT prod_codigo FROM DELETED
+
+				 OPEN mi_cursor
+				 FETCH NEXT FROM mi_cursor INTO @prod
+
+				 WHILE @@FETCH_STATUS = 0
+				 BEGIN
+					  IF @stock_total <= 0
+						BEGIN
+							 DELETE FROM Producto WHERE prod_codigo = @prod
+							 DELETE FROM Composicion WHERE comp_producto = @prod
+							 DELETE FROM STOCK WHERE stoc_producto = @prod
+						END
+					  ELSE
+						BEGIN
+							 RAISERROR('No se puede borrar el producto porque tiene stock',1,1)
+						END
+					  
+					  FETCH NEXT FROM mi_cursor INTO @prod
+				END
+
+				CLOSE mi_cursor
+				DEALLOCATE mi_cursor
+
+COMMIT
