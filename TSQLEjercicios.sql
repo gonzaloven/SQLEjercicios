@@ -350,3 +350,48 @@ BEGIN TRANSACTION
 
 COMMIT
 
+--EJERCICIO 17
+
+CREATE TRIGGER validar_ingreso ON STOCK
+INSTEAD OF UPDATE
+AS
+
+BEGIN TRANSACTION
+				 DECLARE @stock_anterior decimal(12,2)
+				 DECLARE @stock_nuevo decimal(12,2)
+				 DECLARE @ingreso_neto decimal(12,2)
+				 DECLARE @limite_maximo decimal(12,2)
+				 DECLARE @limite_minimo decimal(12,2)
+
+				 SELECT @stock_anterior = d.stoc_cantidad,
+						@stock_nuevo = i.stoc_cantidad,
+						@limite_maximo = i.stoc_stock_maximo,
+						@limite_minimo = i.stoc_punto_reposicion
+				 FROM INSERTED i, DELETED d
+
+				 SET @ingreso_neto = @stock_nuevo - @stock_anterior
+
+				 IF @ingreso_neto > 0
+					BEGIN
+						 IF @ingreso_neto > @limite_maximo
+							BEGIN
+								 UPDATE STOCK
+								 SET stoc_cantidad = stoc_cantidad + @limite_maximo
+							END
+						 ELSE IF @ingreso_neto < @limite_minimo
+								 BEGIN
+									  RAISERROR('No se puede ingresar menos stock que el punto de reposicion',1,1)
+								 END
+							  ELSE
+								 BEGIN
+									  UPDATE STOCK
+									  SET stoc_cantidad = stoc_cantidad + @ingreso_neto
+								 END
+					END
+				 ELSE
+					BEGIN
+						 UPDATE STOCK
+						 SET stoc_cantidad = stoc_cantidad + @ingreso_neto
+					END
+COMMIT
+								   
