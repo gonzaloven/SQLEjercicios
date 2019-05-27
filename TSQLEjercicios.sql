@@ -283,3 +283,70 @@ BEGIN
 
 	 RETURN @precio
 END
+
+--EJERCICIO 16
+
+CREATE TRIGGER actualizar_stock ON Item_Factura
+AFTER INSERT
+AS
+
+BEGIN TRANSACTION
+				 DECLARE @prod char(8)
+				 DECLARE @cantidad_comprada decimal(12,2)
+				 DECLARE @deposito char(2)
+				 DECLARE @stock_actual decimal(12,2)
+
+				 DECLARE mi_cursor CURSOR LOCAL FAST_FORWARD FOR
+				 SELECT item_producto, item_cantidad, stoc_deposito, stoc_cantidad
+				 FROM INSERTED JOIN Factura 
+				 ON item_numero = fact_numero
+				 AND item_sucursal = fact_sucursal
+				 AND item_tipo = fact_tipo
+				 JOIN Producto ON item_producto = prod_codigo
+				 JOIN STOCK ON prod_codigo = stoc_producto
+
+				 OPEN mi_cursor
+				 FETCH NEXT FROM mi_cursor
+				 INTO @prod, @cantidad_comprada, @deposito, @stock_actual
+
+				 WHILE @@FETCH_STATUS = 0
+				 BEGIN
+					  IF (@stock_actual - @cantidad_comprada) >= 0
+						BEGIN
+							 UPDATE STOCK
+							 SET stoc_cantidad = stoc_cantidad - @cantidad_comprada
+							 WHERE @prod = stoc_producto 
+							 AND @deposito = stoc_deposito
+						END
+					  ELSE
+						BEGIN
+							 FETCH NEXT FROM mi_cursor
+							 INTO @prod, @cantidad_comprada, @deposito, @stock_actual
+
+							 IF @@FETCH_STATUS != 0
+								BEGIN
+									 FETCH PRIOR FROM mi_cursor
+									 INTO @prod, @cantidad_comprada, @deposito, @stock_actual
+
+									 UPDATE STOCK
+									 SET stoc_cantidad = stoc_cantidad - @cantidad_comprada
+									 WHERE @prod = stoc_producto 
+									 AND @deposito = stoc_deposito
+								END
+							 ELSE
+								BEGIN
+									 FETCH PRIOR FROM mi_cursor
+									 INTO @prod, @cantidad_comprada, @deposito, @stock_actual
+								END
+						END
+				 
+				 FETCH NEXT FROM mi_cursor
+				 INTO @prod, @cantidad_comprada, @deposito, @stock_actual
+
+				 END
+
+				 CLOSE mi_cursor
+				 DEALLOCATE mi_cursor
+
+COMMIT
+
