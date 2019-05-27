@@ -262,3 +262,24 @@ BEGIN
 	 DEALLOCATE mi_cursor
 
 END
+
+--EJERCICIO 15
+
+CREATE FUNCTION precio_compuesto (@prod char(8))
+RETURNS decimal(12,2)
+AS
+
+BEGIN
+	 DECLARE @precio decimal(12,2)
+
+	 SELECT @precio = SUM(comp_cantidad * dbo.precio_compuesto(comp_componente))
+	 FROM Composicion
+	 WHERE @prod = comp_producto
+
+	 IF @precio IS NULL
+		BEGIN
+			 SET @precio = (SELECT prod_precio FROM Producto WHERE @prod = prod_codigo)
+		END
+
+	 RETURN @precio
+END
