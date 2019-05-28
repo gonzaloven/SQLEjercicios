@@ -449,3 +449,48 @@ BEGIN TRANSACTION
 					END
 COMMIT
 								   
+--EJERCICIO 19 (No esta bien del todo, porque hay que suponer muchas cosas que no se dicen en el enunciado)
+								   
+CREATE TRIGGER validar_jefe ON Empleado
+AFTER INSERT
+AS
+
+BEGIN TRANSACTION
+
+DECLARE @jefe numeric(6,0)
+DECLARE @jefeanterior numeric(6,0)
+DECLARE @empleado numeric(6,0)
+DECLARE @cant_empleados_a_cargo int
+DECLARE @empleados_totales int
+DECLARE @antiguedad int
+DECLARE @fecha_ingreso smalldatetime
+
+SELECT @jefe = i.empl_jefe
+	  ,@empleado = i.empl_codigo
+FROM INSERTED i
+
+SELECT @fecha_ingreso = empl_ingreso
+	  ,@cant_empleados_a_cargo = dbo.empleados_a_cargo(@jefe)
+	  ,@empleados_totales = (SELECT COUNT(empl_codigo) FROM Empleado)
+FROM Empleado
+WHERE empl_codigo = @jefe
+
+SET @antiguedad = YEAR(GETDATE()) - YEAR(@fecha_ingreso)
+
+IF @cant_empleados_a_cargo != @empleados_totales
+	BEGIN
+		 IF @cant_empleados_a_cargo > CEILING(@empleados_totales/2) AND @antiguedad < 5
+			BEGIN
+				UPDATE DEPOSITO
+				SET depo_encargado = NULL
+				WHERE depo_encargado = @empleado
+				
+				DELETE FROM Empleado
+				WHERE empl_codigo = @empleado
+
+				RAISERROR('No se puede asignar a un empleado un jefe que tenga menos de 5 anios de antiguedad o
+						   que tenga mas del 50% de los empleados a su cargo',1,1)
+			END
+	END
+
+COMMIT
