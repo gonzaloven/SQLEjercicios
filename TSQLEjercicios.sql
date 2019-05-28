@@ -494,3 +494,31 @@ IF @cant_empleados_a_cargo != @empleados_totales
 	END
 
 COMMIT
+
+--EJERCICIO 21
+
+CREATE TRIGGER validar_familia_factura ON Factura
+INSTEAD OF INSERT
+AS
+
+BEGIN TRANSACTION
+
+IF (SELECT COUNT(DISTINCT(prod_familia))
+	FROM INSERTED 
+	JOIN Item_Factura 
+	ON fact_numero = item_numero
+	AND fact_sucursal = item_sucursal
+	AND fact_tipo = item_tipo
+	JOIN Producto
+	ON prod_codigo = item_producto) > 1
+
+	BEGIN
+		 RAISERROR('No se puede insertar una factura que tenga productos de distintas familias',1,1)
+	END
+ELSE 
+	BEGIN
+		 INSERT INTO Factura
+		 SELECT * FROM INSERTED
+	END
+
+COMMIT
