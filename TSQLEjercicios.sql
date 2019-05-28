@@ -395,3 +395,57 @@ BEGIN TRANSACTION
 					END
 COMMIT
 								   
+--EJERCICIO 18
+
+CREATE TRIGGER validar_ingreso_factura ON Factura
+INSTEAD OF INSERT
+AS
+
+BEGIN TRANSACTION
+				 DECLARE @tipo char(1)
+				 DECLARE @sucu char(4)
+				 DECLARE @numero char(8)
+				 DECLARE @fecha smalldatetime
+				 DECLARE @vendedor numeric(6,0)
+				 DECLARE @total decimal(12,2)
+				 DECLARE @totalimpuesto decimal(12,2)
+				 DECLARE @cliente char(6)
+				 DECLARE @contadorMonto decimal(12,2)
+				 DECLARE @limiteCredito decimal(12,2)
+				 DECLARE @contadorFactura char(8)
+
+				 SELECT @tipo = fact_tipo,
+						@sucu = fact_sucursal,
+						@numero = fact_numero,
+						@fecha = fact_fecha,
+						@vendedor = fact_vendedor,
+						@total = fact_total,
+						@totalimpuesto = fact_total_impuestos,
+						@cliente = fact_cliente,
+						@limiteCredito = clie_limite_credito
+				 FROM INSERTED, Cliente
+				 WHERE fact_cliente = clie_codigo
+
+				 SET @contadorMonto = @total
+				 SET @contadorFactura = @numero
+
+				 WHILE @contadorMonto > 0
+					BEGIN
+						 
+						 IF @contadorMonto >= @limiteCredito
+							BEGIN
+								 INSERT INTO Factura
+								 VALUES (@tipo, @sucu, @contadorFactura, @fecha, @vendedor, @limiteCredito, @totalimpuesto, @cliente)
+							END
+						 ELSE
+							BEGIN
+								 INSERT INTO Factura
+								 VALUES (@tipo, @sucu, @contadorFactura, @fecha, @vendedor, @contadorMonto, @totalimpuesto, @cliente)
+							END
+
+						 SET @contadorMonto = @contadorMonto - @limiteCredito
+						 SET @contadorFactura = @contadorFactura + 1
+
+					END
+COMMIT
+								   
