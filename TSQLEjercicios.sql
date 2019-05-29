@@ -522,3 +522,59 @@ ELSE
 	END
 
 COMMIT
+
+--EJERCICIO 22
+
+CREATE PROCEDURE recategorizar_productos
+AS
+BEGIN
+	DECLARE @prod CHAR(8)
+	DECLARE @rubro CHAR(4)
+
+	DECLARE mi_cursor CURSOR LOCAL FAST_FORWARD
+	FOR
+	SELECT prod_codigo
+		  ,prod_rubro
+	FROM Producto
+	JOIN Rubro ON prod_rubro = rubr_id
+
+	OPEN mi_cursor
+
+	FETCH NEXT FROM mi_cursor
+	INTO @prod
+		,@rubro
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		IF dbo.productos_rubro(@rubro) > 20
+		BEGIN
+			IF EXISTS(SELECT TOP 1 r1.rubr_id FROM Rubro r1 WHERE dbo.productos_rubro(r1.rubr_id) < 20 AND r1.rubr_id != '0050')
+				BEGIN
+					UPDATE Producto
+					SET prod_rubro = (
+						SELECT TOP 1 r1.rubr_id
+						FROM Rubro r1
+						WHERE dbo.productos_rubro(r1.rubr_id) < 20
+						AND r1.rubr_id != '0050'
+						)
+					WHERE prod_codigo = @prod
+				END
+			ELSE
+				BEGIN
+					UPDATE Producto
+					SET prod_rubro = '0050'
+					WHERE prod_codigo = @prod
+				END
+		END
+
+		FETCH NEXT FROM mi_cursor
+		INTO @prod
+			,@rubro
+
+	END
+
+	CLOSE mi_cursor
+	DEALLOCATE mi_cursor
+
+END
+		 
