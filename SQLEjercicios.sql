@@ -299,3 +299,38 @@ AND SUBSTRING(f3.fami_detalle,1,5) = SUBSTRING(f2.fami_detalle,1,5)
 AND f1.fami_detalle != f2.fami_detalle
 AND f2.fami_id < f3.fami_id
 ORDER BY prod_detalle ASC
+
+--EJERCICIO 20
+					  
+SELECT TOP 3 
+
+		e1.empl_codigo AS Legajo,
+		e1.empl_nombre AS Nombre,
+	    e1.empl_apellido AS Apellido,
+	    YEAR(e1.empl_ingreso) AS Anio,
+
+		CASE 
+				WHEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor) >= 50 
+				THEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor
+															 AND fact_total > 100
+															 AND YEAR(fact_fecha) = 2011)
+			    WHEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor) < 10 
+				THEN (SELECT ISNULL((COUNT(*) * 0.5),0) FROM Factura WHERE fact_vendedor 
+				IN(SELECT empl_codigo FROM Empleado WHERE empl_jefe = e1.empl_codigo)
+				AND YEAR(fact_fecha) = 2011)
+		END
+	    AS PUNTAJE2011,
+		CASE 
+				WHEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor) >= 50 
+				THEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor
+															 AND fact_total > 100
+															 AND YEAR(fact_fecha) = 2012)
+			    WHEN (SELECT ISNULL(COUNT(*),0) FROM Factura WHERE empl_codigo = fact_vendedor) < 10 
+				THEN (SELECT ISNULL((COUNT(*) * 0.5),0) FROM Factura WHERE fact_vendedor 
+				IN(SELECT empl_codigo FROM Empleado WHERE empl_jefe = e1.empl_codigo)
+				AND YEAR(fact_fecha) = 2012)
+		END
+	    AS PUNTAJE2012
+
+FROM Empleado e1
+ORDER BY PUNTAJE2012 DESC
