@@ -282,3 +282,20 @@ JOIN Item_Factura ON prod_codigo = item_producto
 JOIN Factura ON fact_numero = item_numero AND item_sucursal = fact_sucursal AND item_tipo = fact_tipo
 GROUP BY rubr_id, rubr_detalle
 ORDER BY COUNT(DISTINCT item_producto) DESC
+
+--EJERCICIO 19
+
+SELECT prod_codigo AS Producto,
+	   prod_detalle AS Detalle,
+	   f1.fami_id AS FamiliaActual,
+	   f1.fami_detalle AS FamiliaActualDetalle,
+	   f2.fami_id AS FamiliaSugerida,
+	   f2.fami_detalle AS FamiliaSugeridaDetalle
+
+FROM Producto, Familia f1, Familia f2, Familia f3
+WHERE prod_familia = f1.fami_id
+AND SUBSTRING(f1.fami_detalle,1,5) = SUBSTRING(f2.fami_detalle,1,5)
+AND SUBSTRING(f3.fami_detalle,1,5) = SUBSTRING(f2.fami_detalle,1,5)
+AND f1.fami_detalle != f2.fami_detalle
+AND f2.fami_id < f3.fami_id
+ORDER BY prod_detalle ASC
