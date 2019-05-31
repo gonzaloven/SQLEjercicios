@@ -334,3 +334,71 @@ SELECT TOP 3
 
 FROM Empleado e1
 ORDER BY PUNTAJE2012 DESC
+
+--EJERCICIO 21
+
+SELECT YEAR(fact_fecha) AS 'Anio',
+	   COUNT(DISTINCT(clie_codigo)) AS 'Clientes mal facturados',
+	   COUNT(DISTINCT(fact_numero + fact_sucursal + fact_tipo)) AS 'Facturas mal hechas'
+FROM Factura JOIN Cliente ON clie_codigo = fact_cliente
+WHERE (fact_total - fact_total_impuestos) - (SELECT SUM(item_cantidad * item_precio) FROM Item_Factura
+											 WHERE fact_numero = item_numero 
+											 AND fact_sucursal = item_sucursal
+											 AND fact_tipo = item_tipo) > 1
+GROUP BY YEAR(fact_fecha)
+
+--EJERCICIO 22
+
+SELECT rubr_detalle AS RUBRO,
+	   DATEPART(QUARTER,fact_fecha) AS TRIMESTRE,
+	   COUNT(DISTINCT(fact_numero + fact_sucursal + fact_tipo)) AS FACTURAS,
+	   COUNT(DISTINCT(item_producto)) AS PRODUCTOSDIFERENTES
+FROM Rubro JOIN Producto ON prod_rubro = rubr_id
+JOIN Item_Factura ON prod_codigo = item_producto
+JOIN Factura ON item_numero = fact_numero
+AND item_sucursal = fact_sucursal
+AND item_tipo = fact_tipo
+WHERE item_cantidad >= 1
+GROUP BY rubr_detalle, DATEPART(QUARTER,fact_fecha)
+HAVING COUNT(DISTINCT(fact_numero + fact_sucursal + fact_tipo)) > 100
+ORDER BY rubr_detalle DESC, FACTURAS DESC
+
+--EJERCICIO 23
+
+SELECT YEAR(f1.fact_fecha) AS ANIO,
+	   
+	   i1.item_producto AS PROD,
+	   
+	   (SELECT COUNT(DISTINCT(comp_componente)) FROM Composicion WHERE comp_producto = i1.item_producto) AS COMPONENTES,
+	   
+	   COUNT(DISTINCT(f1.fact_numero + f1.fact_sucursal + f1.fact_tipo)) AS FACTURAS,
+	   
+	   (SELECT TOP 1 fact_cliente FROM Factura JOIN Item_Factura
+		ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+		WHERE YEAR(fact_fecha) = YEAR(f1.fact_fecha) 
+		AND item_producto = i1.item_producto
+		GROUP BY fact_cliente
+		ORDER BY SUM(item_cantidad) DESC) AS CLIENTEMASCOMPRADOR,
+
+	   (SUM(ISNULL(i1.item_cantidad * i1.item_precio,0)) * 100) /
+	   (SELECT SUM(i2.item_cantidad * i2.item_precio) 
+	   FROM Item_Factura i2 JOIN Factura f2 
+	   ON item_numero = fact_numero
+	   AND item_sucursal = fact_sucursal
+	   AND item_tipo = fact_tipo
+	   WHERE YEAR(f2.fact_fecha) = YEAR(f1.fact_fecha)) AS 'Porcentaje'
+	   
+FROM Item_Factura i1 JOIN Factura f1 ON item_numero = fact_numero
+AND item_sucursal = fact_sucursal
+AND item_tipo = fact_tipo
+WHERE i1.item_producto = (SELECT TOP 1 item_producto FROM
+	Item_Factura JOIN Producto ON prod_codigo = item_producto
+	JOIN Composicion ON prod_codigo = comp_producto
+	JOIN Factura ON item_numero = fact_numero
+	AND item_sucursal = fact_sucursal
+	AND item_tipo = fact_tipo
+	WHERE YEAR(fact_fecha) = YEAR(f1.fact_fecha)
+	GROUP BY item_producto
+	ORDER BY SUM(item_cantidad * item_precio) DESC)
+GROUP BY YEAR(f1.fact_fecha), i1.item_producto
+ORDER BY SUM(i1.item_cantidad * i1.item_precio) DESC
