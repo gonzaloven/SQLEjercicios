@@ -402,3 +402,24 @@ WHERE i1.item_producto = (SELECT TOP 1 item_producto FROM
 	ORDER BY SUM(item_cantidad * item_precio) DESC)
 GROUP BY YEAR(f1.fact_fecha), i1.item_producto
 ORDER BY SUM(i1.item_cantidad * i1.item_precio) DESC
+
+--EJERCICIO 24
+
+SELECT item_producto,
+	   prod_detalle,
+	   SUM(item_cantidad) AS UNIDADESFACT,
+	   fact_numero
+FROM Producto JOIN Item_Factura ON item_producto = prod_codigo
+JOIN Composicion ON comp_producto = prod_codigo
+JOIN Factura ON item_numero = fact_numero
+AND item_sucursal = fact_sucursal
+AND item_tipo = fact_tipo
+WHERE fact_numero IN (SELECT f2.fact_numero FROM Factura f2
+					 JOIN Item_Factura i2 ON item_numero = fact_numero
+					 AND item_sucursal = fact_sucursal
+					 AND item_tipo = fact_tipo
+					 JOIN Empleado ON fact_vendedor = empl_codigo
+					 WHERE empl_codigo IN (SELECT TOP 2 empl_codigo FROM Empleado
+										  ORDER BY empl_comision DESC))
+GROUP BY item_producto, prod_detalle, fact_numero
+ORDER BY UNIDADESFACT DESC
